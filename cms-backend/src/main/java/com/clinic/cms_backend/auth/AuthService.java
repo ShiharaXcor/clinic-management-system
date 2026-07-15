@@ -4,8 +4,11 @@ import com.clinic.cms_backend.user.Role;
 import com.clinic.cms_backend.user.RoleRepository;
 import com.clinic.cms_backend.user.User;
 import com.clinic.cms_backend.user.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 @Service
 public class AuthService {
@@ -14,6 +17,12 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+
+    @Value("${security.lockout.max-attempts}")
+    private int maxAttempts;
+
+    @Value("${security.lockout.lockout-duration-minutes}")
+    private long lockoutDurationMinutes;
 
     public AuthService(UserRepository userRepository, RoleRepository roleRepository,
                        PasswordEncoder passwordEncoder, JwtService jwtService) {
@@ -48,13 +57,41 @@ public class AuthService {
             throw new IllegalArgumentException("Account is disabled");
         }
 
+        if (user.getLockedUntil() != null) {
+            if (user.getLockedUntil().isAfter(LocalDateTime.now())) {
+                throw new IllegalArgumentException(
+                        "Account is locked. Try again after " + user.getLockedUntil());
+            } else {
+                // Lock has expired naturally -> reset the counter
+                user.setFailedLoginAttempts(0);
+                user.setLockedUntil(null);
+            }
+        }
+
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            handleFailedLogin(user);
             throw new IllegalArgumentException("Invalid email or password");
         }
+
+        // Successful login -> reset failure tracking
+        user.setFailedLoginAttempts(0);
+        user.setLockedUntil(null);
+        userRepository.save(user);
 
         String accessToken = jwtService.generateAccessToken(user.getEmail(), user.getRole().getName());
         String refreshToken = jwtService.generateRefreshToken(user.getEmail());
 
         return new LoginResponse(accessToken, refreshToken, user.getEmail(), user.getFullName(), user.getRole().getName());
+    }
+
+    private void handleFailedLogin(User user) {
+        int attempts = user.getFailedLoginAttempts() + 1;
+        user.setFailedLoginAttempts(attempts);
+
+        if (attempts >= maxAttempts) {
+            user.setLockedUntil(LocalDateTime.now().plusMinutes(lockoutDurationMinutes));
+        }
+
+        userRepository.save(user);
     }
 }
