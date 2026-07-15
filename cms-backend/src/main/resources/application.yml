@@ -21,10 +21,10 @@ spring:
     locations: classpath:db/migration
 
 jwt:
-  secret: change-this-to-a-long-random-secret-later
+  secret: this-is-a-much-longer-secret-key-for-jwt-signing-change-in-production-1234567890
   access-token-expiration-ms: 900000
   refresh-token-expiration-ms: 604800000
-
 logging:
   level:
     com.clinic.cms_backend: DEBUG
+    org.springframework.security: DEBUG
