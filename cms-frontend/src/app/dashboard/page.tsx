@@ -1,26 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/authStore";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { ProtectedRoute } from "../components/ProtectedRoute";
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
-  const { user, isAuthenticated, hydrate, logout } = useAuthStore();
-
-  useEffect(() => {
-    hydrate();
-  }, [hydrate]);
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        router.push("/login");
-      }
-    }
-  }, [isAuthenticated, router]);
+  const { user, logout } = useAuthStore();
 
   const handleLogout = () => {
     logout();
@@ -53,5 +40,13 @@ export default function DashboardPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <ProtectedRoute>
+      <DashboardContent />
+    </ProtectedRoute>
   );
 }
