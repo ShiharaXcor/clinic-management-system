@@ -94,4 +94,24 @@ public class AuthService {
 
         userRepository.save(user);
     }
+
+    public RefreshResponse refresh(RefreshRequest request) {
+        String token = request.getRefreshToken();
+
+        if (jwtService.isTokenExpired(token)) {
+            throw new IllegalArgumentException("Refresh token has expired. Please log in again.");
+        }
+
+        String email = jwtService.extractEmail(token);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User no longer exists"));
+
+        if (!user.isEnabled()) {
+            throw new IllegalArgumentException("Account is disabled");
+        }
+
+        String newAccessToken = jwtService.generateAccessToken(user.getEmail(), user.getRole().getName());
+        return new RefreshResponse(newAccessToken);
+    }
 }

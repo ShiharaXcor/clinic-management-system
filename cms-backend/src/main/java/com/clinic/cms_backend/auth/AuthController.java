@@ -27,6 +27,12 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(@Valid @RequestBody RefreshRequest request) {
+        RefreshResponse response = authService.refresh(request);
+        return ResponseEntity.ok(response);
+    }
+
     public record RegisterResponse(Long id, String email, String fullName, String role) {
     }
 }
