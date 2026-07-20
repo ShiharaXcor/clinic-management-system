@@ -32,9 +32,30 @@ public class AuthService {
         this.jwtService = jwtService;
     }
 
-    public User register(RegisterRequest request) {
+   public User registerPatient(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Email already registered");
+        }
+
+        Role patientRole = roleRepository.findByName("PATIENT")
+                .orElseThrow(() -> new IllegalArgumentException("PATIENT role not found - check DB seed data"));
+
+        User user = new User();
+        user.setEmail(request.getEmail());
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setFullName(request.getFullName());
+        user.setRole(patientRole);
+
+        return userRepository.save(user);
+    }
+
+    public User registerStaff(RegisterRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new IllegalArgumentException("Email already registered");
+        }
+
+        if ("PATIENT".equalsIgnoreCase(request.getRoleName())) {
+            throw new IllegalArgumentException("Use the patient registration endpoint for patient accounts");
         }
 
         Role role = roleRepository.findByName(request.getRoleName())
