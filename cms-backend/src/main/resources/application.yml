@@ -11,7 +11,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: validate   # Flyway owns the schema; Hibernate must not auto-generate it
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
@@ -21,10 +21,16 @@ spring:
     locations: classpath:db/migration
 
 jwt:
-  secret: change-this-to-a-long-random-secret-later
+  secret: this-is-a-much-longer-secret-key-for-jwt-signing-change-in-production-1234567890
   access-token-expiration-ms: 900000
   refresh-token-expiration-ms: 604800000
+
+security:
+  lockout:
+    max-attempts: 5
+    lockout-duration-minutes: 15
 
 logging:
   level:
     com.clinic.cms_backend: DEBUG
+    org.springframework.security: DEBUG
